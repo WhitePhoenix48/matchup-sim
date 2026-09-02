@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matchup Sim — College Football Projection Engine</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#14301F">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Matchup Sim">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --field:#14301F;
+    --field-dark:#0E2417;
+    --chalk:#F5F3ED;
+    --hash:#DCD8C8;
+    --amber:#FFB627;
+    --rust:#C1440E;
+    --ink:#1B1B18;
+    --ink-soft:#5B5A54;
+    --line:rgba(220,216,200,0.18);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--field);
+    background-image:
+      repeating-linear-gradient(180deg, rgba(245,243,237,0.035) 0px, rgba(245,243,237,0.035) 1px, transparent 1px, transparent 64px);
+    color:var(--chalk);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    padding:28px 16px 60px;
+  }
+  .wrap{max-width:760px;margin:0 auto;}
+
+  /* header */
+  .masthead{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    border-bottom:2px solid var(--hash);
+    padding-bottom:14px;
+    margin-bottom:22px;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+  .masthead h1{
+    font-family:'Big Shoulders Display',sans-serif;
+    font-weight:700;
+    font-size:34px;
+    letter-spacing:0.3px;
+    margin:0;
+    line-height:0.95;
+  }
+  .masthead .tag{
+    font-size:12.5px;
+    color:var(--hash);
+    max-width:220px;
+    text-align:right;
+    line-height:1.4;
+  }
+
+  /* panel */
+  .panel{
+    background:rgba(245,243,237,0.04);
+    border:1px solid var(--line);
+    padding:18px 18px 20px;
+    margin-bottom:16px;
+  }
+  .panel-title{
+    font-family:'Big Shoulders Display',sans-serif;
+    font-size:15px;
+    font-weight:600;
+    letter-spacing:0.5px;
+    color:var(--amber);
+    margin:0 0 12px;
+    padding-bottom:8px;
+    border-bottom:1px solid var(--line);
+  }
+
+  /* setup / connect */
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
+  .field{flex:1;min-width:160px;}
+  label{display:block;font-size:12px;color:var(--hash);margin-bottom:5px;}
+  input[type=password], input[type=text], select{
+    width:100%;
+    background:var(--chalk);
+    color:var(--ink);
+    border:none;
+    padding:9px 10px;
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+  }
+  select{cursor:pointer;}
+  .check-row{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--hash);margin-top:8px;}
+  .check-row input{width:15px;height:15px;}
+
+  button{
+    font-family:'Big Shoulders Display',sans-serif;
+    font-weight:600;
+    letter-spacing:0.4px;
+    font-size:15px;
+    padding:11px 18px;
+    border:none;
+    background:var(--amber);
+    color:var(--ink);
+    cursor:pointer;
+  }
+  button:hover{filter:brightness(1.07);}
+  button:disabled{opacity:0.45;cursor:not-allowed;}
+  button.secondary{
+    background:transparent;
+    border:1px solid var(--hash);
+    color:var(--chalk);
+  }
+  button.secondary:hover{background:rgba(245,243,237,0.08);}
+
+  .status-line{font-size:12.5px;color:var(--hash);margin-top:10px;line-height:1.5;}
+  .status-line.err{color:#FF9E80;}
+  .status-line.ok{color:#B9E3C6;}
+
+  /* matchup */
+  .matchup-grid{
+    display:grid;
+    grid-template-columns:1fr auto 1fr;
+    gap:12px;
+    align-items:end;
+  }
+  .vs{
+    font-family:'Big Shoulders Display',sans-serif;
+    font-size:20px;
+    color:var(--hash);
+    padding-bottom:9px;
+  }
+  .side-label{font-size:11px;letter-spacing:0.8px;color:var(--amber);margin-bottom:5px;}
+
+  .options-row{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px;align-items:center;}
+  .options-row .field{flex:0 0 170px;}
+
+  .sim-btn-wrap{margin-top:16px;}
+  .sim-btn-wrap button{width:100%;font-size:18px;padding:14px;}
+
+  /* results */
+  .scoreboard{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    border-top:2px solid var(--hash);
+    border-bottom:2px solid var(--hash);
+    margin-bottom:4px;
+  }
+  .score-col{padding:16px 10px;text-align:center;}
+  .score-col.away{border-right:1px solid var(--line);}
+  .score-col .team-name{font-size:13px;color:var(--hash);margin-bottom:6px;min-height:16px;}
+  .score-col .score{
+    font-family:'Big Shoulders Display',sans-serif;
+    font-weight:800;
+    font-size:52px;
+    line-height:1;
+    color:var(--chalk);
+  }
+  .score-col.winner .score{color:var(--amber);}
+  .score-col .record{font-size:12.5px;color:var(--hash);margin-top:8px;}
+  .score-col .record b{color:var(--chalk);}
+
+  .bar-row{margin:16px 0 4px;}
+  .bar-labels{display:flex;justify-content:space-between;font-size:12px;color:var(--hash);margin-bottom:4px;}
+  .bar-track{height:10px;background:rgba(245,243,237,0.12);display:flex;overflow:hidden;}
+  .bar-away{background:var(--rust);height:100%;}
+  .bar-home{background:var(--amber);height:100%;}
+
+  .factors{margin-top:18px;padding-top:14px;border-top:1px solid var(--line);}
+  .factor-row{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;color:var(--hash);border-bottom:1px dotted var(--line);}
+  .factor-row span:last-child{color:var(--chalk);}
+
+  .empty-note{font-size:13px;color:var(--hash);line-height:1.6;}
+
+  .footnote{font-size:11.5px;color:var(--ink-soft);margin-top:20px;line-height:1.6;text-align:center;}
+  a{color:var(--amber);}
+
+  @media(max-width:480px){
+    .masthead{flex-direction:column;}
+    .masthead .tag{text-align:left;max-width:100%;}
+    .matchup-grid{grid-template-columns:1fr;}
+    .vs{padding:2px 0;text-align:center;}
+    .score-col .score{font-size:42px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="masthead">
+    <h1>MATCHUP SIM</h1>
+    <div class="tag">100-run projection engine for any FBS matchup, built on SP+, talent, and advanced season data</div>
+  </div>
+
+  <!-- CONNECT -->
+  <div class="panel" id="connectPanel">
+    <div class="panel-title">DATA SOURCE — collegefootballdata.com</div>
+    <div class="row">
+      <div class="field" style="flex:2;">
+        <label for="apiKey">API key</label>
+        <input type="password" id="apiKey" placeholder="Paste your CFBD API key">
+      </div>
+      <div class="field" style="flex:1;min-width:110px;">
+        <label for="seasonYear">Season</label>
+        <select id="seasonYear">
+          <option value="2025" selected>2025 (final)</option>
+          <option value="2024">2024</option>
+          <option value="2023">2023</option>
+        </select>
+      </div>
+      <div>
+        <button id="loadBtn">Load Data</button>
+      </div>
+    </div>
+    <div class="check-row">
+      <input type="checkbox" id="rememberKey">
+      <label for="rememberKey" style="margin:0;">Save key in this browser's private storage so I don't re-enter it</label>
+    </div>
+    <div class="status-line" id="statusLine">Not connected yet. The 2026 season just started (0–1 games played league-wide), so projections are built on final 2025 season data by default — the most recent complete, statistically meaningful season.</div>
+  </div>
+
+  <!-- MATCHUP -->
+  <div class="panel" id="matchupPanel" style="display:none;">
+    <div class="panel-title">SET THE MATCHUP</div>
+    <div class="matchup-grid">
+      <div class="field">
+        <div class="side-label">AWAY</div>
+        <select id="awayTeam"></select>
+      </div>
+      <div class="vs">@</div>
+      <div class="field">
+        <div class="side-label">HOME</div>
+        <select id="homeTeam"></select>
+      </div>
+    </div>
+    <div class="options-row">
+      <div class="field">
+        <label for="neutralSite" style="margin-bottom:4px;">Site</label>
+        <select id="neutralSite">
+          <option value="no">Home team hosts</option>
+          <option value="yes">Neutral site</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="weather" style="margin-bottom:4px;">Weather</label>
+        <select id="weather">
+          <option value="clear">Clear / dome</option>
+          <option value="wind">High wind</option>
+          <option value="rain">Rain</option>
+          <option value="snow">Snow / cold</option>
+        </select>
+      </div>
+    </div>
+    <div class="sim-btn-wrap">
+      <button id="simBtn">Run 100 Simulations</button>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="panel" id="resultsPanel" style="display:none;">
+    <div class="panel-title" id="resultsTitle">PROJECTION</div>
+
+    <div class="scoreboard">
+      <div class="score-col away" id="awayCol">
+        <div class="team-name" id="awayNameOut">AWAY</div>
+        <div class="score" id="awayScoreOut">0.0</div>
+        <div class="record" id="awayRecordOut"></div>
+      </div>
+      <div class="score-col home" id="homeCol">
+        <div class="team-name" id="homeNameOut">HOME</div>
+        <div class="score" id="homeScoreOut">0.0</div>
+        <div class="record" id="homeRecordOut"></div>
+      </div>
+    </div>
+
+    <div class="bar-row">
+      <div class="bar-labels">
+        <span id="awayPct">0%</span>
+        <span>WIN PROBABILITY (100 sims)</span>
+        <span id="homePct">0%</span>
+      </div>
+      <div class="bar-track">
+        <div class="bar-away" id="barAway" style="width:50%"></div>
+        <div class="bar-home" id="barHome" style="width:50%"></div>
+      </div>
+    </div>
+
+    <div class="factors" id="factors"></div>
+  </div>
+
+  <div class="panel" id="emptyPanel">
+    <div class="empty-note">
+      Enter your collegefootballdata.com API key above and load data to get started. The engine pulls SP+ ratings (overall / offense / defense / special teams), recruiting talent composite, and advanced per-play season stats (PPA, success rate, explosiveness) for all FBS teams, then runs a 100-game Monte Carlo simulation for whichever matchup you set, factoring in home field advantage, neutral-site games, and weather.
+    </div>
+  </div>
+
+  <div class="footnote">
+    Data via <a href="https://collegefootballdata.com" target="_blank" rel="noopener">collegefootballdata.com</a>. Projections are a statistical estimate for entertainment purposes, not a guarantee of outcomes. Your API key is stored only in this browser's private app storage, never in this file.
+  </div>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  let TEAMS = {};       // normalized name -> merged stat object
+  let TEAM_LIST = [];    // array of display names, sorted
+  let LEAGUE_AVG = {};   // z-score baselines
+
+  const $ = (id) => document.getElementById(id);
+
+  const statusLine = $('statusLine');
+  const loadBtn = $('loadBtn');
+  const simBtn = $('simBtn');
+
+  function setStatus(msg, cls){
+    statusLine.textContent = msg;
+    statusLine.className = 'status-line' + (cls ? ' ' + cls : '');
+  }
+
+  // ---------- storage (Claude artifact persistent storage) ----------
+  async function tryLoadSavedKey(){
+    try{
+      const res = await window.storage.get('cfbd_api_key', false);
+      if(res && res.value){
+        $('apiKey').value = res.value;
+        $('rememberKey').checked = true;
+      }
+    }catch(e){ /* no saved key yet, fine */ }
+  }
+  async function saveKeyIfRequested(key){
+    try{
+      if($('rememberKey').checked){
+        await window.storage.set('cfbd_api_key', key, false);
+      } else {
+        await window.storage.delete('cfbd_api_key', false).catch(()=>{});
+      }
+    }catch(e){ /* storage unavailable, silently skip */ }
+  }
+  tryLoadSavedKey();
+
+  // ---------- helpers ----------
+  function normName(s){
+    return (s||'').toLowerCase().replace(/[().]/g,'').replace(/\s+/g,' ').trim();
+  }
+  function mean(arr){ return arr.reduce((a,b)=>a+b,0) / (arr.length||1); }
+  function stdev(arr, m){
+    const mu = (m===undefined) ? mean(arr) : m;
+    return Math.sqrt(mean(arr.map(x=>(x-mu)*(x-mu)))) || 1;
+  }
+  function gaussian(mean_, sd){
+    // Box-Muller
+    let u=0,v=0;
+    while(u===0) u = Math.random();
+    while(v===0) v = Math.random();
+    const z = Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v);
+    return mean_ + z*sd;
+  }
+  function fmt1(n){ return (Math.round(n*10)/10).toFixed(1); }
+
+  async function cfbdFetch(path, apiKey){
+    const res = await fetch('https://api.collegefootballdata.com' + path, {
+      headers: { 'Authorization': 'Bearer ' + apiKey, 'Accept': 'application/json' }
+    });
+    if(!res.ok){
+      const text = await res.text().catch(()=> '');
+      throw new Error('HTTP ' + res.status + (text ? (' — ' + text.slice(0,140)) : ''));
+    }
+    return res.json();
+  }
+
+  // ---------- load & merge data ----------
+  async function loadData(){
+    const apiKey = $('apiKey').value.trim();
+    const year = $('seasonYear').value;
+    if(!apiKey){
+      setStatus('Enter your CFBD API key first.', 'err');
+      return;
+    }
+    loadBtn.disabled = true;
+    setStatus('Connecting to collegefootballdata.com …');
+
+    try{
+      const [teams, sp, talent, adv] = await Promise.all([
+        cfbdFetch('/teams/fbs?year=' + year, apiKey),
+        cfbdFetch('/ratings/sp?year=' + year, apiKey),
+        cfbdFetch('/talent?year=' + year, apiKey).catch(()=>[]),
+        cfbdFetch('/stats/season/advanced?year=' + year + '&excludeGarbageTime=true', apiKey).catch(()=>[])
+      ]);
+
+      if(!Array.isArray(teams) || teams.length === 0){
+        throw new Error('No team list returned — check your API key.');
+      }
+
+      const merged = {};
+      teams.forEach(t=>{
+        const school = t.school || t.team;
+        if(!school) return;
+        const key = normName(school);
+        merged[key] = {
+          school: school,
+          conference: t.conference || 'Independent',
+          spOverall: null, spOffense: null, spDefense: null, spSpecial: null,
+          talent: null,
+          offPPA: null, defPPA: null,
+          offSuccess: null, defSuccess: null,
+          offExplosive: null, defExplosive: null
+        };
+      });
+
+      (sp||[]).forEach(r=>{
+        const key = normName(r.team);
+        if(!merged[key]) return;
+        merged[key].spOverall = numOrNull(r.rating);
+        merged[key].spOffense = numOrNull(r.offense && r.offense.rating);
+        merged[key].spDefense = numOrNull(r.defense && r.defense.rating);
+        merged[key].spSpecial = numOrNull(r.specialTeams && r.specialTeams.rating);
+      });
+
+      (talent||[]).forEach(r=>{
+        const key = normName(r.school || r.team);
+        if(!merged[key]) return;
+        merged[key].talent = numOrNull(r.talent);
+      });
+
+      (adv||[]).forEach(r=>{
+        const key = normName(r.team);
+        if(!merged[key]) return;
+        const off = r.offense || {};
+        const def = r.defense || {};
+        merged[key].offPPA = numOrNull(off.ppa);
+        merged[key].defPPA = numOrNull(def.ppa);
+        merged[key].offSuccess = numOrNull(off.successRate);
+        merged[key].defSuccess = numOrNull(def.successRate);
+        merged[key].offExplosive = numOrNull(off.explosiveness);
+        merged[key].defExplosive = numOrNull(def.explosiveness);
+      });
+
+      TEAMS = merged;
+      TEAM_LIST = Object.values(merged).sort((a,b)=> a.school.localeCompare(b.school));
+      computeLeagueBaselines();
+      populateDropdowns();
+
+      const withSp = TEAM_LIST.filter(t=>t.spOverall!==null).length;
+      saveKeyIfRequested(apiKey);
+
+      $('matchupPanel').style.display = '';
+      $('emptyPanel').style.display = 'none';
+      setStatus('Loaded ' + TEAM_LIST.length + ' FBS teams for ' + year + ' — SP+ ratings available for ' + withSp + ' of them, plus talent and advanced stats where reported. Set a matchup below.', 'ok');
+    }catch(err){
+      console.error(err);
+      let msg = 'Could not load data: ' + err.message;
+      if(String(err.message).toLowerCase().includes('failed to fetch')){
+        msg += ' — this can also mean the browser blocked a cross-origin request. Double-check the key and try again.';
+      }
+      setStatus(msg, 'err');
+    }finally{
+      loadBtn.disabled = false;
+    }
+  }
+
+  function numOrNull(v){
+    const n = Number(v);
+    return (v===undefined || v===null || isNaN(n)) ? null : n;
+  }
+
+  function computeLeagueBaselines(){
+    function stats(field){
+      const vals = TEAM_LIST.map(t=>t[field]).filter(v=>v!==null && !isNaN(v));
+      const m = mean(vals);
+      const sd = stdev(vals, m) || 1;
+      return {mean:m, sd:sd};
+    }
+    LEAGUE_AVG = {
+      spOverall: stats('spOverall'),
+      spOffense: stats('spOffense'),
+      spDefense: stats('spDefense'),
+      talent: stats('talent'),
+      offPPA: stats('offPPA'),
+      defPPA: stats('defPPA')
+    };
+  }
+
+  function zscore(val, field){
+    if(val===null || val===undefined || isNaN(val)) return 0;
+    const b = LEAGUE_AVG[field];
+    if(!b || !b.sd) return 0;
+    return (val - b.mean) / b.sd;
+  }
+
+  function populateDropdowns(){
+    [$('awayTeam'), $('homeTeam')].forEach(sel=>{
+      sel.innerHTML = '';
+      TEAM_LIST.forEach(t=>{
+        const opt = document.createElement('option');
+        opt.value = normName(t.school);
+        opt.textContent = t.school;
+        sel.appendChild(opt);
+      });
+    });
+    // sensible default distinct picks
+    if(TEAM_LIST.length > 1){
+      $('awayTeam').value = normName(TEAM_LIST[0].school);
+      $('homeTeam').value = normName(TEAM_LIST[1].school);
+    }
+  }
+
+  // ---------- simulation ----------
+  function expectedPoints(team, opponent, isHome, neutral, weather){
+    const BASE = 27; // approx FBS average points/team/game
+    const offEdge = zscore(team.spOffense, 'spOffense') - zscore(opponent.spDefense, 'spDefense');
+    const ppaEdge = zscore(team.offPPA, 'offPPA') - zscore(opponent.defPPA, 'defPPA');
+    const talentEdge = zscore(team.talent, 'talent');
+    const overallEdge = zscore(team.spOverall, 'spOverall') - zscore(opponent.spOverall, 'spOverall');
+
+    let pts = BASE
+      + offEdge * 6.5
+      + ppaEdge * 2.5
+      + talentEdge * 1.2
+      + overallEdge * 2.0;
+
+    if(isHome && neutral==='no') pts += 2.5;
+    if(!isHome && neutral==='no') pts -= 0.5;
+
+    if(weather==='wind') pts -= 1.5;
+    if(weather==='rain') pts -= 2.5;
+    if(weather==='snow') pts -= 3.5;
+
+    return Math.max(pts, 3);
+  }
+
+  function runSimulations(awayKey, homeKey, neutral, weather){
+    const away = TEAMS[awayKey], home = TEAMS[homeKey];
+    const awayExp = expectedPoints(away, home, false, neutral, weather);
+    const homeExp = expectedPoints(home, away, true, neutral, weather);
+
+    // variance: typical FBS game score std-dev ~13-14, wider in bad weather (more randomness from turnovers/short fields)
+    let sd = 13.5;
+    if(weather==='rain') sd = 14.5;
+    if(weather==='snow') sd = 16;
+
+    let awayWins=0, homeWins=0, awaySum=0, homeSum=0;
+    for(let i=0;i<100;i++){
+      let aScore = Math.round(Math.max(0, gaussian(awayExp, sd)));
+      let hScore = Math.round(Math.max(0, gaussian(homeExp, sd)));
+      if(aScore === hScore){
+        // force a resolution, like OT — small random nudge
+        if(Math.random() < 0.5) aScore += 3; else hScore += 3;
+      }
+      awaySum += aScore; homeSum += hScore;
+      if(aScore > hScore) awayWins++; else homeWins++;
+    }
+
+    return {
+      awayAvg: awaySum/100, homeAvg: homeSum/100,
+      awayWins, homeWins,
+      awayExp, homeExp
+    };
+  }
+
+  function renderResults(awayKey, homeKey, neutral, weather, result){
+    const away = TEAMS[awayKey], home = TEAMS[homeKey];
+    $('resultsPanel').style.display = '';
+    $('resultsTitle').textContent = (neutral==='yes' ? 'PROJECTION — NEUTRAL SITE' : 'PROJECTION') +
+      (weather!=='clear' ? ' · ' + weather.toUpperCase() : '');
+
+    $('awayNameOut').textContent = away.school + ' (away)';
+    $('homeNameOut').textContent = home.school + ' (home)';
+    $('awayScoreOut').textContent = fmt1(result.awayAvg);
+    $('homeScoreOut').textContent = fmt1(result.homeAvg);
+    $('awayRecordOut').innerHTML = '<b>' + result.awayWins + '</b>-' + result.homeWins + ' across 100 sims';
+    $('homeRecordOut').innerHTML = '<b>' + result.homeWins + '</b>-' + result.awayWins + ' across 100 sims';
+
+    $('awayCol').className = 'score-col away' + (result.awayWins>result.homeWins?' winner':'');
+    $('homeCol').className = 'score-col' + (result.homeWins>result.awayWins?' winner':'');
+
+    $('awayPct').textContent = result.awayWins + '%';
+    $('homePct').textContent = result.homeWins + '%';
+    $('barAway').style.width = result.awayWins + '%';
+    $('barHome').style.width = result.homeWins + '%';
+
+    const spDiff = (home.spOverall ?? 0) - (away.spOverall ?? 0);
+    const talentDiff = (home.talent ?? 0) - (away.talent ?? 0);
+    const factors = [
+      ['SP+ overall (home − away)', (spDiff>=0?'+':'') + spDiff.toFixed(1) + ' for ' + home.school],
+      ['Talent composite (home − away)', talentDiff ? ((talentDiff>=0?'+':'') + Math.round(talentDiff) + ' for ' + home.school) : 'no data'],
+      ['Home field advantage', neutral==='yes' ? 'neutral site — none applied' : '+2.5 pts to ' + home.school],
+      ['Weather modifier', weather==='clear' ? 'none' : weather.charAt(0).toUpperCase()+weather.slice(1) + ' — reduced scoring, higher variance'],
+      ['Simulated scoring range (1 std dev)', '±' + (weather==='snow'?16:weather==='rain'?14.5:13.5) + ' pts per team, per game']
+    ];
+    $('factors').innerHTML = '<div class="panel-title" style="margin-bottom:8px;">WHY THIS PROJECTION</div>' +
+      factors.map(f => '<div class="factor-row"><span>'+f[0]+'</span><span>'+f[1]+'</span></div>').join('');
+
+    $('resultsPanel').scrollIntoView({behavior:'smooth', block:'nearest'});
+  }
+
+  function runSim(){
+    const awayKey = $('awayTeam').value;
+    const homeKey = $('homeTeam').value;
+    if(!awayKey || !homeKey){ return; }
+    if(awayKey === homeKey){
+      setStatus('Pick two different teams.', 'err');
+      return;
+    }
+    const neutral = $('neutralSite').value;
+    const weather = $('weather').value;
+    const result = runSimulations(awayKey, homeKey, neutral, weather);
+    renderResults(awayKey, homeKey, neutral, weather, result);
+  }
+
+  loadBtn.addEventListener('click', loadData);
+  simBtn.addEventListener('click', runSim);
+
+  // ---------- PWA install ----------
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', ()=>{
+      navigator.serviceWorker.register('service-worker.js').catch(()=>{
+        // Registration fails on file:// or non-secure origins — app still works, just not installable there.
+      });
+    });
+  }
+
+})();
+</script>
+</body>
+</html>
