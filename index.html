@@ -614,8 +614,8 @@
   function expectedPoints(team, opponent, isHome, neutral, weather){
     const BASE = (LEAGUE_AVG.pointsFor && LEAGUE_AVG.pointsFor.n) ? LEAGUE_AVG.pointsFor.mean : 27;
 
-    const scoringEdge = zscore(team.pointsFor, 'pointsFor') - zscore(opponent.pointsAgainst, 'pointsAgainst');
-    const efficiencyEdge = zscore(team.yppFor, 'yppFor') - zscore(opponent.yppAgainst, 'yppAgainst');
+    const scoringEdge = zscore(team.pointsFor, 'pointsFor') + zscore(opponent.pointsAgainst, 'pointsAgainst');
+    const efficiencyEdge = zscore(team.yppFor, 'yppFor') + zscore(opponent.yppAgainst, 'yppAgainst');
     const turnoverEdge = zscore(team.toMargin, 'toMargin');
 
     let pts = BASE
