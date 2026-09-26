@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Matchup Sim — College Football Projection Engine</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#14301F">
@@ -35,11 +35,10 @@
     color:var(--chalk);
     font-family:'Inter',sans-serif;
     min-height:100vh;
-    padding:28px 16px 60px;
+    padding:calc(28px + env(safe-area-inset-top, 0px)) 16px calc(60px + env(safe-area-inset-bottom, 0px));
   }
   .wrap{max-width:760px;margin:0 auto;}
 
-  /* header */
   .masthead{
     display:flex;
     align-items:baseline;
@@ -61,12 +60,11 @@
   .masthead .tag{
     font-size:12.5px;
     color:var(--hash);
-    max-width:220px;
+    max-width:230px;
     text-align:right;
     line-height:1.4;
   }
 
-  /* panel */
   .panel{
     background:rgba(245,243,237,0.04);
     border:1px solid var(--line);
@@ -82,13 +80,23 @@
     margin:0 0 12px;
     padding-bottom:8px;
     border-bottom:1px solid var(--line);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+  }
+  .panel-title .count{
+    font-family:'Inter',sans-serif;
+    font-weight:500;
+    font-size:12px;
+    color:var(--hash);
+    letter-spacing:0;
   }
 
-  /* setup / connect */
   .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
   .field{flex:1;min-width:160px;}
   label{display:block;font-size:12px;color:var(--hash);margin-bottom:5px;}
-  input[type=password], input[type=text], select{
+  input[type=text], select, textarea{
     width:100%;
     background:var(--chalk);
     color:var(--ink);
@@ -97,9 +105,14 @@
     font-family:'Inter',sans-serif;
     font-size:14px;
   }
+  textarea{
+    font-family:'SFMono-Regular',Consolas,monospace;
+    font-size:12px;
+    min-height:110px;
+    resize:vertical;
+    line-height:1.5;
+  }
   select{cursor:pointer;}
-  .check-row{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--hash);margin-top:8px;}
-  .check-row input{width:15px;height:15px;}
 
   button{
     font-family:'Big Shoulders Display',sans-serif;
@@ -125,7 +138,19 @@
   .status-line.err{color:#FF9E80;}
   .status-line.ok{color:#B9E3C6;}
 
-  /* matchup */
+  .import-log{margin-top:12px;}
+  .import-item{
+    font-size:12.5px;
+    color:var(--hash);
+    padding:7px 0;
+    border-bottom:1px dotted var(--line);
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .import-item b{color:var(--chalk);}
+  .import-item .cols{color:var(--ink-soft);font-size:11px;}
+
   .matchup-grid{
     display:grid;
     grid-template-columns:1fr auto 1fr;
@@ -146,7 +171,6 @@
   .sim-btn-wrap{margin-top:16px;}
   .sim-btn-wrap button{width:100%;font-size:18px;padding:14px;}
 
-  /* results */
   .scoreboard{
     display:grid;
     grid-template-columns:1fr 1fr;
@@ -176,7 +200,7 @@
 
   .factors{margin-top:18px;padding-top:14px;border-top:1px solid var(--line);}
   .factor-row{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;color:var(--hash);border-bottom:1px dotted var(--line);}
-  .factor-row span:last-child{color:var(--chalk);}
+  .factor-row span:last-child{color:var(--chalk);text-align:right;}
 
   .empty-note{font-size:13px;color:var(--hash);line-height:1.6;}
 
@@ -197,34 +221,34 @@
 
   <div class="masthead">
     <h1>MATCHUP SIM</h1>
-    <div class="tag">100-run projection engine for any FBS matchup, built on SP+, talent, and advanced season data</div>
+    <div class="tag">100-run projection engine built from Sports Reference team stats you import</div>
   </div>
 
-  <!-- CONNECT -->
-  <div class="panel" id="connectPanel">
-    <div class="panel-title">DATA SOURCE — collegefootballdata.com</div>
-    <div class="row">
-      <div class="field" style="flex:2;">
-        <label for="apiKey">API key</label>
-        <input type="password" id="apiKey" placeholder="Paste your CFBD API key">
-      </div>
-      <div class="field" style="flex:1;min-width:110px;">
-        <label for="seasonYear">Season</label>
-        <select id="seasonYear">
-          <option value="2025" selected>2025 (final)</option>
-          <option value="2024">2024</option>
-          <option value="2023">2023</option>
+  <!-- IMPORT -->
+  <div class="panel" id="importPanel">
+    <div class="panel-title">IMPORT STATS FROM SPORTS-REFERENCE.COM <span class="count" id="teamCount">0 teams loaded</span></div>
+    <div class="status-line" id="statusLine">
+      On a stat page at sports-reference.com/cfb, use "Share &amp; Export" → "comma-separated" to copy the table, then paste the whole thing below — including the header rows and footer credit line, no need to trim it.
+      You need a <b>Team Offense</b> and <b>Team Defense</b> page; turnover margin is derived automatically from both.
+    </div>
+    <div class="row" style="margin-top:12px;">
+      <div class="field" style="flex:0 0 170px;">
+        <label for="blockType">Table type</label>
+        <select id="blockType">
+          <option value="offense">Team Offense</option>
+          <option value="defense">Team Defense</option>
         </select>
       </div>
-      <div>
-        <button id="loadBtn">Load Data</button>
-      </div>
     </div>
-    <div class="check-row">
-      <input type="checkbox" id="rememberKey">
-      <label for="rememberKey" style="margin:0;">Save key in this browser's private storage so I don't re-enter it</label>
+    <div class="field" style="margin-top:10px;">
+      <label for="pasteArea">Pasted CSV block</label>
+      <textarea id="pasteArea" placeholder="Rk,School,G,Plays,Yds,Yds/Play,Pts,...&#10;1,Team A,12,850,6200,7.3,45.2,..."></textarea>
     </div>
-    <div class="status-line" id="statusLine">Not connected yet. The 2026 season just started (0–1 games played league-wide), so projections are built on final 2025 season data by default — the most recent complete, statistically meaningful season.</div>
+    <div class="row" style="margin-top:10px;">
+      <button id="addBlockBtn">Add Block</button>
+      <button class="secondary" id="clearDataBtn">Clear All Data</button>
+    </div>
+    <div class="import-log" id="importLog"></div>
   </div>
 
   <!-- MATCHUP -->
@@ -298,12 +322,12 @@
 
   <div class="panel" id="emptyPanel">
     <div class="empty-note">
-      Enter your collegefootballdata.com API key above and load data to get started. The engine pulls SP+ ratings (overall / offense / defense / special teams), recruiting talent composite, and advanced per-play season stats (PPA, success rate, explosiveness) for all FBS teams, then runs a 100-game Monte Carlo simulation for whichever matchup you set, factoring in home field advantage, neutral-site games, and weather.
+      Paste in Team Offense and Team Defense CSV exports above to get started. The engine derives points-per-game, yards-per-play, and turnover margin for every team you import, then runs a 100-game Monte Carlo simulation for whichever matchup you set, factoring in home field advantage, neutral-site games, and weather. Your imported data is saved to this app's private storage automatically, so you won't need to re-paste it next time you open it — just re-import when you want fresher numbers.
     </div>
   </div>
 
   <div class="footnote">
-    Data via <a href="https://collegefootballdata.com" target="_blank" rel="noopener">collegefootballdata.com</a>. Projections are a statistical estimate for entertainment purposes, not a guarantee of outcomes. Your API key is stored only in this browser's private app storage, never in this file.
+    Team stats sourced by you from <a href="https://www.sports-reference.com/cfb/" target="_blank" rel="noopener">sports-reference.com</a>. Projections are a statistical estimate for entertainment purposes, not a guarantee of outcomes. Imported data is stored only in this app's private storage on your device.
   </div>
 
 </div>
@@ -312,45 +336,48 @@
 (function(){
   "use strict";
 
-  let TEAMS = {};       // normalized name -> merged stat object
-  let TEAM_LIST = [];    // array of display names, sorted
-  let LEAGUE_AVG = {};   // z-score baselines
+  // TEAMS: normalized-name -> { school, games, pointsFor, pointsAgainst, yppFor, yppAgainst, toMargin }
+  let TEAMS = {};
+  let IMPORT_LOG = []; // {typeLabel, rowCount, matchedCols:[...]}
+  let LEAGUE_AVG = {};
 
   const $ = (id) => document.getElementById(id);
-
   const statusLine = $('statusLine');
-  const loadBtn = $('loadBtn');
-  const simBtn = $('simBtn');
 
   function setStatus(msg, cls){
-    statusLine.textContent = msg;
+    statusLine.innerHTML = msg;
     statusLine.className = 'status-line' + (cls ? ' ' + cls : '');
   }
 
-  // ---------- storage (Claude artifact persistent storage) ----------
-  async function tryLoadSavedKey(){
+  // ---------- persistent storage ----------
+  async function loadSavedData(){
     try{
-      const res = await window.storage.get('cfbd_api_key', false);
+      const res = await window.storage.get('sr_teams_v1', false);
       if(res && res.value){
-        $('apiKey').value = res.value;
-        $('rememberKey').checked = true;
+        const parsed = JSON.parse(res.value);
+        TEAMS = parsed.teams || {};
+        IMPORT_LOG = parsed.log || [];
+        if(Object.keys(TEAMS).length){
+          computeLeagueBaselines();
+          renderImportLog();
+          updateTeamCount();
+          populateDropdowns();
+          setStatus('Restored ' + Object.keys(TEAMS).length + ' previously imported teams from this device. Paste new blocks to refresh, or clear to start over.', 'ok');
+          maybeShowMatchup();
+        }
       }
-    }catch(e){ /* no saved key yet, fine */ }
+    }catch(e){ /* nothing saved yet */ }
   }
-  async function saveKeyIfRequested(key){
+  async function persist(){
     try{
-      if($('rememberKey').checked){
-        await window.storage.set('cfbd_api_key', key, false);
-      } else {
-        await window.storage.delete('cfbd_api_key', false).catch(()=>{});
-      }
-    }catch(e){ /* storage unavailable, silently skip */ }
+      await window.storage.set('sr_teams_v1', JSON.stringify({teams:TEAMS, log:IMPORT_LOG}), false);
+    }catch(e){ /* storage unavailable, app still works this session */ }
   }
-  tryLoadSavedKey();
+  loadSavedData();
 
   // ---------- helpers ----------
   function normName(s){
-    return (s||'').toLowerCase().replace(/[().]/g,'').replace(/\s+/g,' ').trim();
+    return (s||'').toLowerCase().replace(/[().]/g,'').replace(/&/g,'and').replace(/\s+/g,' ').trim();
   }
   function mean(arr){ return arr.reduce((a,b)=>a+b,0) / (arr.length||1); }
   function stdev(arr, m){
@@ -358,7 +385,6 @@
     return Math.sqrt(mean(arr.map(x=>(x-mu)*(x-mu)))) || 1;
   }
   function gaussian(mean_, sd){
-    // Box-Muller
     let u=0,v=0;
     while(u===0) u = Math.random();
     while(v===0) v = Math.random();
@@ -366,167 +392,236 @@
     return mean_ + z*sd;
   }
   function fmt1(n){ return (Math.round(n*10)/10).toFixed(1); }
+  function num(v){
+    if(v===undefined || v===null) return NaN;
+    const cleaned = String(v).replace(/,/g,'').replace(/%/g,'').trim();
+    const n = parseFloat(cleaned);
+    return n;
+  }
 
-  async function cfbdFetch(path, apiKey){
-    const res = await fetch('https://api.collegefootballdata.com' + path, {
-      headers: { 'Authorization': 'Bearer ' + apiKey, 'Accept': 'application/json' }
+  // simple CSV line parser (handles quoted fields with commas)
+  function parseCSVLine(line){
+    const out = [];
+    let cur = '';
+    let inQuotes = false;
+    for(let i=0;i<line.length;i++){
+      const c = line[i];
+      if(c === '"'){
+        inQuotes = !inQuotes;
+      } else if(c === ',' && !inQuotes){
+        out.push(cur); cur='';
+      } else {
+        cur += c;
+      }
+    }
+    out.push(cur);
+    return out.map(s=>s.trim());
+  }
+
+  function findCol(headers, aliases){
+    const lower = headers.map(h=>h.toLowerCase().trim());
+    for(const alias of aliases){
+      const idx = lower.indexOf(alias);
+      if(idx !== -1) return idx;
+    }
+    return -1;
+  }
+
+  // ---------- parsing a pasted block ----------
+  // Sports Reference CFB team offense/defense tables repeat header names (three
+  // "Yds" columns, two "Avg" columns), so we anchor on the unique "Plays" and
+  // "Pts" headers rather than searching generically. Values in these tables are
+  // already per-game averages. The paste often includes a category header row
+  // above the real header row and a "Provided by..." footer line below the data
+  // — both are skipped automatically.
+  function parseBlock(csvText, type){
+    const rawLines = csvText.split(/\r?\n/).map(l=>l.trim());
+
+    let headerIdx = -1, headers = null, teamColIdx = -1;
+    for(let i=0;i<rawLines.length;i++){
+      if(!rawLines[i]) continue;
+      const cells = parseCSVLine(rawLines[i]);
+      const idx = cells.findIndex(c => /^(school|team)$/i.test(c.trim()));
+      if(idx !== -1){ headerIdx = i; headers = cells; teamColIdx = idx; break; }
+    }
+    if(headerIdx === -1){
+      throw new Error('Could not find a header row with a "School" column — paste the full table including its header row.');
+    }
+
+    const gamesIdx = findCol(headers, ['g','gms','gp','games']);
+    const ptsIdx = findCol(headers, ['pts','points']);
+    const playsIdx = findCol(headers, ['plays']);
+    // Total Offense group is "Plays, Yds, Avg" in that order — Avg (yards/play) is two after Plays.
+    const yppIdx = (playsIdx !== -1 && playsIdx + 2 < headers.length) ? playsIdx + 2 : findCol(headers, ['avg']);
+    // Turnovers group is always last (Fum, Int, Tot/TO) — the final column is the total.
+    const turnoverIdx = headers.length - 1;
+
+    const matchedCols = [];
+    if(teamColIdx !== -1) matchedCols.push(headers[teamColIdx] + ' → team');
+    if(gamesIdx !== -1) matchedCols.push(headers[gamesIdx] + ' → games');
+    if(ptsIdx !== -1) matchedCols.push(headers[ptsIdx] + ' → points/game');
+    if(yppIdx !== -1) matchedCols.push(headers[yppIdx] + ' → yards/play');
+    matchedCols.push(headers[turnoverIdx] + ' → turnovers (' + (type==='offense'?'giveaways':'takeaways') + ')');
+
+    let rowCount = 0;
+    for(let i=headerIdx+1;i<rawLines.length;i++){
+      const line = rawLines[i];
+      if(!line) continue;
+      const cells = parseCSVLine(line);
+      if(!/^\d+$/.test((cells[0]||'').trim())) continue; // skips footer/attribution/blank/repeated-header lines
+      const rawName = cells[teamColIdx];
+      if(!rawName) continue;
+      const key = normName(rawName);
+      if(!key) continue;
+
+      if(!TEAMS[key]) TEAMS[key] = { school: rawName.replace(/\*/g,'').trim() };
+      const t = TEAMS[key];
+
+      const games = gamesIdx !== -1 ? num(cells[gamesIdx]) : NaN;
+      if(!isNaN(games)) t.games = games;
+
+      const pts = ptsIdx !== -1 ? num(cells[ptsIdx]) : NaN;
+      const ypp = (yppIdx !== -1 && yppIdx < cells.length) ? num(cells[yppIdx]) : NaN;
+      const tov = turnoverIdx < cells.length ? num(cells[turnoverIdx]) : NaN;
+
+      if(type === 'offense'){
+        if(!isNaN(pts)) t.pointsFor = pts;
+        if(!isNaN(ypp)) t.yppFor = ypp;
+        if(!isNaN(tov)) t.giveaways = tov;
+      } else if(type === 'defense'){
+        if(!isNaN(pts)) t.pointsAgainst = pts;
+        if(!isNaN(ypp)) t.yppAgainst = ypp;
+        if(!isNaN(tov)) t.takeaways = tov;
+      }
+      rowCount++;
+    }
+
+    if(rowCount === 0) throw new Error('No team rows recognized — check that this is a Sports Reference team table and try the "comma-separated" export again.');
+    return { rowCount, matchedCols };
+  }
+
+  function recomputeTurnoverMargins(){
+    Object.values(TEAMS).forEach(t=>{
+      if(typeof t.takeaways === 'number' && typeof t.giveaways === 'number'){
+        t.toMargin = t.takeaways - t.giveaways;
+      }
     });
-    if(!res.ok){
-      const text = await res.text().catch(()=> '');
-      throw new Error('HTTP ' + res.status + (text ? (' — ' + text.slice(0,140)) : ''));
-    }
-    return res.json();
-  }
-
-  // ---------- load & merge data ----------
-  async function loadData(){
-    const apiKey = $('apiKey').value.trim();
-    const year = $('seasonYear').value;
-    if(!apiKey){
-      setStatus('Enter your CFBD API key first.', 'err');
-      return;
-    }
-    loadBtn.disabled = true;
-    setStatus('Connecting to collegefootballdata.com …');
-
-    try{
-      const [teams, sp, talent, adv] = await Promise.all([
-        cfbdFetch('/teams/fbs?year=' + year, apiKey),
-        cfbdFetch('/ratings/sp?year=' + year, apiKey),
-        cfbdFetch('/talent?year=' + year, apiKey).catch(()=>[]),
-        cfbdFetch('/stats/season/advanced?year=' + year + '&excludeGarbageTime=true', apiKey).catch(()=>[])
-      ]);
-
-      if(!Array.isArray(teams) || teams.length === 0){
-        throw new Error('No team list returned — check your API key.');
-      }
-
-      const merged = {};
-      teams.forEach(t=>{
-        const school = t.school || t.team;
-        if(!school) return;
-        const key = normName(school);
-        merged[key] = {
-          school: school,
-          conference: t.conference || 'Independent',
-          spOverall: null, spOffense: null, spDefense: null, spSpecial: null,
-          talent: null,
-          offPPA: null, defPPA: null,
-          offSuccess: null, defSuccess: null,
-          offExplosive: null, defExplosive: null
-        };
-      });
-
-      (sp||[]).forEach(r=>{
-        const key = normName(r.team);
-        if(!merged[key]) return;
-        merged[key].spOverall = numOrNull(r.rating);
-        merged[key].spOffense = numOrNull(r.offense && r.offense.rating);
-        merged[key].spDefense = numOrNull(r.defense && r.defense.rating);
-        merged[key].spSpecial = numOrNull(r.specialTeams && r.specialTeams.rating);
-      });
-
-      (talent||[]).forEach(r=>{
-        const key = normName(r.school || r.team);
-        if(!merged[key]) return;
-        merged[key].talent = numOrNull(r.talent);
-      });
-
-      (adv||[]).forEach(r=>{
-        const key = normName(r.team);
-        if(!merged[key]) return;
-        const off = r.offense || {};
-        const def = r.defense || {};
-        merged[key].offPPA = numOrNull(off.ppa);
-        merged[key].defPPA = numOrNull(def.ppa);
-        merged[key].offSuccess = numOrNull(off.successRate);
-        merged[key].defSuccess = numOrNull(def.successRate);
-        merged[key].offExplosive = numOrNull(off.explosiveness);
-        merged[key].defExplosive = numOrNull(def.explosiveness);
-      });
-
-      TEAMS = merged;
-      TEAM_LIST = Object.values(merged).sort((a,b)=> a.school.localeCompare(b.school));
-      computeLeagueBaselines();
-      populateDropdowns();
-
-      const withSp = TEAM_LIST.filter(t=>t.spOverall!==null).length;
-      saveKeyIfRequested(apiKey);
-
-      $('matchupPanel').style.display = '';
-      $('emptyPanel').style.display = 'none';
-      setStatus('Loaded ' + TEAM_LIST.length + ' FBS teams for ' + year + ' — SP+ ratings available for ' + withSp + ' of them, plus talent and advanced stats where reported. Set a matchup below.', 'ok');
-    }catch(err){
-      console.error(err);
-      let msg = 'Could not load data: ' + err.message;
-      if(String(err.message).toLowerCase().includes('failed to fetch')){
-        msg += ' — this can also mean the browser blocked a cross-origin request. Double-check the key and try again.';
-      }
-      setStatus(msg, 'err');
-    }finally{
-      loadBtn.disabled = false;
-    }
-  }
-
-  function numOrNull(v){
-    const n = Number(v);
-    return (v===undefined || v===null || isNaN(n)) ? null : n;
   }
 
   function computeLeagueBaselines(){
     function stats(field){
-      const vals = TEAM_LIST.map(t=>t[field]).filter(v=>v!==null && !isNaN(v));
+      const vals = Object.values(TEAMS).map(t=>t[field]).filter(v=>typeof v==='number' && !isNaN(v));
       const m = mean(vals);
       const sd = stdev(vals, m) || 1;
-      return {mean:m, sd:sd};
+      return {mean:m, sd:sd, n:vals.length};
     }
     LEAGUE_AVG = {
-      spOverall: stats('spOverall'),
-      spOffense: stats('spOffense'),
-      spDefense: stats('spDefense'),
-      talent: stats('talent'),
-      offPPA: stats('offPPA'),
-      defPPA: stats('defPPA')
+      pointsFor: stats('pointsFor'),
+      pointsAgainst: stats('pointsAgainst'),
+      yppFor: stats('yppFor'),
+      yppAgainst: stats('yppAgainst'),
+      toMargin: stats('toMargin')
     };
   }
-
   function zscore(val, field){
-    if(val===null || val===undefined || isNaN(val)) return 0;
+    if(val===undefined || val===null || isNaN(val)) return 0;
     const b = LEAGUE_AVG[field];
     if(!b || !b.sd) return 0;
     return (val - b.mean) / b.sd;
   }
 
-  function populateDropdowns(){
-    [$('awayTeam'), $('homeTeam')].forEach(sel=>{
-      sel.innerHTML = '';
-      TEAM_LIST.forEach(t=>{
-        const opt = document.createElement('option');
-        opt.value = normName(t.school);
-        opt.textContent = t.school;
-        sel.appendChild(opt);
-      });
-    });
-    // sensible default distinct picks
-    if(TEAM_LIST.length > 1){
-      $('awayTeam').value = normName(TEAM_LIST[0].school);
-      $('homeTeam').value = normName(TEAM_LIST[1].school);
+  function renderImportLog(){
+    const log = $('importLog');
+    if(IMPORT_LOG.length === 0){ log.innerHTML=''; return; }
+    log.innerHTML = IMPORT_LOG.map(item =>
+      '<div class="import-item"><span><b>' + item.typeLabel + '</b> — ' + item.rowCount + ' teams matched</span></div>' +
+      '<div class="import-item cols" style="border-bottom:1px solid var(--line);padding-top:0;">' + item.matchedCols.join(' · ') + '</div>'
+    ).join('');
+  }
+
+  function updateTeamCount(){
+    $('teamCount').textContent = Object.keys(TEAMS).length + ' teams loaded';
+  }
+
+  function maybeShowMatchup(){
+    const hasOffense = Object.values(TEAMS).some(t=>typeof t.pointsFor==='number');
+    const hasDefense = Object.values(TEAMS).some(t=>typeof t.pointsAgainst==='number');
+    if(hasOffense && hasDefense && Object.keys(TEAMS).length >= 2){
+      $('matchupPanel').style.display = '';
+      $('emptyPanel').style.display = 'none';
     }
   }
 
+  function populateDropdowns(){
+    const list = Object.keys(TEAMS).sort((a,b)=> TEAMS[a].school.localeCompare(TEAMS[b].school));
+    [$('awayTeam'), $('homeTeam')].forEach(sel=>{
+      const prevVal = sel.value;
+      sel.innerHTML = '';
+      list.forEach(key=>{
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = TEAMS[key].school;
+        sel.appendChild(opt);
+      });
+      if(list.includes(prevVal)) sel.value = prevVal;
+    });
+    if(list.length > 1 && $('awayTeam').value === $('homeTeam').value){
+      $('awayTeam').value = list[0];
+      $('homeTeam').value = list[1];
+    }
+  }
+
+  // ---------- add block handler ----------
+  $('addBlockBtn').addEventListener('click', ()=>{
+    const type = $('blockType').value;
+    const typeLabels = {offense:'Team Offense', defense:'Team Defense', turnovers:'Turnovers'};
+    const text = $('pasteArea').value;
+    if(!text.trim()){
+      setStatus('Paste a CSV block first.', 'err');
+      return;
+    }
+    try{
+      const result = parseBlock(text, type);
+      IMPORT_LOG.push({typeLabel: typeLabels[type], rowCount: result.rowCount, matchedCols: result.matchedCols});
+      recomputeTurnoverMargins();
+      computeLeagueBaselines();
+      renderImportLog();
+      updateTeamCount();
+      populateDropdowns();
+      maybeShowMatchup();
+      persist();
+      $('pasteArea').value = '';
+      setStatus('Added ' + typeLabels[type] + ' — matched ' + result.rowCount + ' teams. Columns used: ' + result.matchedCols.join(', '), 'ok');
+    }catch(err){
+      setStatus('Could not parse that block: ' + err.message, 'err');
+    }
+  });
+
+  $('clearDataBtn').addEventListener('click', async ()=>{
+    TEAMS = {};
+    IMPORT_LOG = [];
+    LEAGUE_AVG = {};
+    renderImportLog();
+    updateTeamCount();
+    $('matchupPanel').style.display = 'none';
+    $('resultsPanel').style.display = 'none';
+    $('emptyPanel').style.display = '';
+    try{ await window.storage.delete('sr_teams_v1', false); }catch(e){}
+    setStatus('Cleared. Paste new blocks to start over.', 'ok');
+  });
+
   // ---------- simulation ----------
   function expectedPoints(team, opponent, isHome, neutral, weather){
-    const BASE = 27; // approx FBS average points/team/game
-    const offEdge = zscore(team.spOffense, 'spOffense') - zscore(opponent.spDefense, 'spDefense');
-    const ppaEdge = zscore(team.offPPA, 'offPPA') - zscore(opponent.defPPA, 'defPPA');
-    const talentEdge = zscore(team.talent, 'talent');
-    const overallEdge = zscore(team.spOverall, 'spOverall') - zscore(opponent.spOverall, 'spOverall');
+    const BASE = (LEAGUE_AVG.pointsFor && LEAGUE_AVG.pointsFor.n) ? LEAGUE_AVG.pointsFor.mean : 27;
+
+    const scoringEdge = zscore(team.pointsFor, 'pointsFor') - zscore(opponent.pointsAgainst, 'pointsAgainst');
+    const efficiencyEdge = zscore(team.yppFor, 'yppFor') - zscore(opponent.yppAgainst, 'yppAgainst');
+    const turnoverEdge = zscore(team.toMargin, 'toMargin');
 
     let pts = BASE
-      + offEdge * 6.5
-      + ppaEdge * 2.5
-      + talentEdge * 1.2
-      + overallEdge * 2.0;
+      + scoringEdge * 6.5
+      + efficiencyEdge * 3.5
+      + turnoverEdge * 1.8;
 
     if(isHome && neutral==='no') pts += 2.5;
     if(!isHome && neutral==='no') pts -= 0.5;
@@ -543,7 +638,6 @@
     const awayExp = expectedPoints(away, home, false, neutral, weather);
     const homeExp = expectedPoints(home, away, true, neutral, weather);
 
-    // variance: typical FBS game score std-dev ~13-14, wider in bad weather (more randomness from turnovers/short fields)
     let sd = 13.5;
     if(weather==='rain') sd = 14.5;
     if(weather==='snow') sd = 16;
@@ -553,18 +647,13 @@
       let aScore = Math.round(Math.max(0, gaussian(awayExp, sd)));
       let hScore = Math.round(Math.max(0, gaussian(homeExp, sd)));
       if(aScore === hScore){
-        // force a resolution, like OT — small random nudge
         if(Math.random() < 0.5) aScore += 3; else hScore += 3;
       }
       awaySum += aScore; homeSum += hScore;
       if(aScore > hScore) awayWins++; else homeWins++;
     }
 
-    return {
-      awayAvg: awaySum/100, homeAvg: homeSum/100,
-      awayWins, homeWins,
-      awayExp, homeExp
-    };
+    return { awayAvg: awaySum/100, homeAvg: homeSum/100, awayWins, homeWins, awayExp, homeExp };
   }
 
   function renderResults(awayKey, homeKey, neutral, weather, result){
@@ -588,11 +677,13 @@
     $('barAway').style.width = result.awayWins + '%';
     $('barHome').style.width = result.homeWins + '%';
 
-    const spDiff = (home.spOverall ?? 0) - (away.spOverall ?? 0);
-    const talentDiff = (home.talent ?? 0) - (away.talent ?? 0);
+    const fmtOrNA = (v, digits) => (typeof v === 'number' && !isNaN(v)) ? v.toFixed(digits) : 'no data';
+
     const factors = [
-      ['SP+ overall (home − away)', (spDiff>=0?'+':'') + spDiff.toFixed(1) + ' for ' + home.school],
-      ['Talent composite (home − away)', talentDiff ? ((talentDiff>=0?'+':'') + Math.round(talentDiff) + ' for ' + home.school) : 'no data'],
+      ['Points/game (away · home)', fmtOrNA(away.pointsFor,1) + '  ·  ' + fmtOrNA(home.pointsFor,1)],
+      ['Points allowed/game (away · home)', fmtOrNA(away.pointsAgainst,1) + '  ·  ' + fmtOrNA(home.pointsAgainst,1)],
+      ['Yards/play (away · home)', fmtOrNA(away.yppFor,2) + '  ·  ' + fmtOrNA(home.yppFor,2)],
+      ['Turnover margin (away · home)', fmtOrNA(away.toMargin,0) + '  ·  ' + fmtOrNA(home.toMargin,0)],
       ['Home field advantage', neutral==='yes' ? 'neutral site — none applied' : '+2.5 pts to ' + home.school],
       ['Weather modifier', weather==='clear' ? 'none' : weather.charAt(0).toUpperCase()+weather.slice(1) + ' — reduced scoring, higher variance'],
       ['Simulated scoring range (1 std dev)', '±' + (weather==='snow'?16:weather==='rain'?14.5:13.5) + ' pts per team, per game']
@@ -603,10 +694,10 @@
     $('resultsPanel').scrollIntoView({behavior:'smooth', block:'nearest'});
   }
 
-  function runSim(){
+  $('simBtn').addEventListener('click', ()=>{
     const awayKey = $('awayTeam').value;
     const homeKey = $('homeTeam').value;
-    if(!awayKey || !homeKey){ return; }
+    if(!awayKey || !homeKey) return;
     if(awayKey === homeKey){
       setStatus('Pick two different teams.', 'err');
       return;
@@ -615,17 +706,12 @@
     const weather = $('weather').value;
     const result = runSimulations(awayKey, homeKey, neutral, weather);
     renderResults(awayKey, homeKey, neutral, weather, result);
-  }
-
-  loadBtn.addEventListener('click', loadData);
-  simBtn.addEventListener('click', runSim);
+  });
 
   // ---------- PWA install ----------
   if('serviceWorker' in navigator){
     window.addEventListener('load', ()=>{
-      navigator.serviceWorker.register('service-worker.js').catch(()=>{
-        // Registration fails on file:// or non-secure origins — app still works, just not installable there.
-      });
+      navigator.serviceWorker.register('service-worker.js').catch(()=>{});
     });
   }
 
